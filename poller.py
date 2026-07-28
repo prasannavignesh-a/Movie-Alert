@@ -24,6 +24,8 @@ from collections import Counter
 from pathlib import Path
 
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", ROOT / "config.json"))
@@ -135,7 +137,7 @@ def fetch(cfg):
         api_url = "https://api.scraperapi.com/?" + urllib.parse.urlencode(
             {"api_key": scraper_key, "country_code": "in", "url": cfg["target_url"]}
         )
-        resp = requests.get(api_url, timeout=90)
+        resp = requests.get(api_url, timeout=90, verify=False)
         resp.raise_for_status()
         return resp.text
 
