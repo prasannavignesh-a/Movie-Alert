@@ -1,17 +1,10 @@
 {
-  "city": "chennai",
-  "date": "20260731",
-  "movie": "Spider-Man: Brand New Day",
-  "preferred_theatres": [
+  "detector": "venue_date",
+  "requested_date": "20260801",
+  "venue_codes": [
     "PVPZ",
     "PVSR",
     "PCAN"
   ],
-  "preferred_formats": [
-    "IMAX",
-    "PXL",
-    "DOLBY",
-    "EPIQ 3D",
-    "3D"
-  ]
+  "url_template": "https://in.bookmyshow.com/movies/chennai/spider-man-brand-new-day-3d/buytickets/ET00502600/{date}"
 }
