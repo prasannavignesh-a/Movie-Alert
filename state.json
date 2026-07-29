@@ -1,4 +1,9 @@
 {
-  "opened_venues": [],
-  "checked_at": 0
+  "opened_venues": [
+    "MAYJ",
+    "PCAN",
+    "PVPZ",
+    "PVSR"
+  ],
+  "checked_at": 1785287197
 }
