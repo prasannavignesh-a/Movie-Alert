@@ -273,51 +273,51 @@ def main():
         # Transient network/blocking errors shouldn't crash the workflow.
         print(f"[{label}] fetch failed: {exc}")
         return 0
-
+    available = is_available(page, cfg)
     opened_now = set(cfg.get("opened_venues", []))
 
     new_openings = opened_now - previous_opened
-    print(f"[{label}] available={available} (was {state.get('available')})")
+    print(f"[{label}] opened={sorted(opened_now)}")
 
     if new_openings:
 
-    rd = cfg["requested_date"]
+        rd = cfg["requested_date"]
 
-    pretty = (
-        f"{rd[6:8]} "
-        f"{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} "
-        f"{rd[0:4]}"
-    )
-
-    theatre_names = {
-        "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
-        "PVSR": "🎭 PVR Sathyam Cinemas",
-        "PCAN": "🎭 PVR PXL, VR Chennai",
-        "MAYJ": "🎭 MAYAJAAL Multiplex"
-    }
-
-    for code in new_openings:
-
-        msg = (
-            f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
-            f"🎉 Booking is LIVE!\n\n"
-            f"🏢 Theatre:\n"
-            f"{theatre_names.get(code, code)}\n\n"
-            f"🎬 Format:\n"
-            f"English 3D\n\n"
-            f"📅 Date:\n"
-            f"{pretty}\n\n"
-            f"🔗 Book Now\n"
-            f"{cfg['target_url']}"
+        pretty = (
+            f"{rd[6:8]} "
+            f"{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} "
+            f"{rd[0:4]}"
         )
 
-        send_telegram(
-            cfg["telegram_bot_token"],
-            cfg["telegram_chat_id"],
-            msg
-        )
+        theatre_names = {
+            "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
+            "PVSR": "🎭 PVR Sathyam Cinemas",
+            "PCAN": "🎭 PVR PXL, VR Chennai",
+            "MAYJ": "🎭 MAYAJAAL Multiplex"
+        }
 
-        print(f"Notification sent for {code}")
+        for code in new_openings:
+
+            msg = (
+                f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
+                f"🎉 Booking is LIVE!\n\n"
+                f"🏢 Theatre:\n"
+                f"{theatre_names.get(code, code)}\n\n"
+                f"🎬 Format:\n"
+                f"English 3D\n\n"
+                f"📅 Date:\n"
+                f"{pretty}\n\n"
+                f"🔗 Book Now\n"
+                f"{cfg['target_url']}"
+            )
+
+            send_telegram(
+                cfg["telegram_bot_token"],
+                cfg["telegram_chat_id"],
+                msg
+            )
+
+            print(f"Notification sent for {code}")
 
     # Persist current state so we don't re-alert every run.
     state["opened_venues"] = sorted(list(opened_now))
