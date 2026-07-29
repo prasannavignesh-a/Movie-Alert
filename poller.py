@@ -191,18 +191,18 @@ def is_available_bms_date(page_text, cfg):
 
 
 def is_available_venue_date(page_text, cfg):
-    """
-    Theatre-specific detector.
-    """
     date = cfg["requested_date"]
     codes = cfg.get("venue_codes") or [cfg["venue_code"]]
 
+    opened = []
+
     for code in codes:
         if f"/{code}/{date}" in page_text:
-            cfg["venue_code"] = code
-            return True
+            opened.append(code)
 
-    return False
+    cfg["opened_venues"] = opened
+
+    return len(opened) > 0
 
 
 def is_available(page_text, cfg):
@@ -251,7 +251,18 @@ def is_available_generic(page_text, cfg):
 
 def main():
     cfg = load_config()
-    state = load_json(STATE_PATH, default={"available": False}) or {"available": False}
+    state = load_json(
+    STATE_PATH,
+    default={
+        "opened_venues": [],
+        "checked_at": 0
+    }
+    ) or {
+        "opened_venues": [],
+        "checked_at": 0
+    }
+
+    previous_opened = set(state.get("opened_venues", []))
 
     target_desc = cfg.get("theatre") or cfg.get("requested_date", "target")
     label = f"{cfg.get('movie', 'movie')} @ {target_desc}"
@@ -263,61 +274,56 @@ def main():
         print(f"[{label}] fetch failed: {exc}")
         return 0
 
-    available = is_available(page, cfg)
+    opened_now = set(cfg.get("opened_venues", []))
+
+    new_openings = opened_now - previous_opened
     print(f"[{label}] available={available} (was {state.get('available')})")
 
-    if available and not state.get("available"):
+    if new_openings:
 
-        if cfg.get("detector") in ("bms_date", "venue_date"):
+    rd = cfg["requested_date"]
 
-            rd = cfg["requested_date"]
-            pretty = f"{rd[6:8]} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} {rd[0:4]}"
+    pretty = (
+        f"{rd[6:8]} "
+        f"{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} "
+        f"{rd[0:4]}"
+    )
 
-            theatre_names = {
-                "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
-                "PVSR": "🎭 PVR Sathyam Cinemas",
-                "PCAN": "🎭 PVR PXL, VR Chennai",
-                "MAYJ": "🎭 MAYAJAAL Multiplex",
-            }
+    theatre_names = {
+        "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
+        "PVSR": "🎭 PVR Sathyam Cinemas",
+        "PCAN": "🎭 PVR PXL, VR Chennai",
+        "MAYJ": "🎭 MAYAJAAL Multiplex"
+    }
 
-            code = cfg.get("venue_code")
-            venue = theatre_names.get(code, code)
+    for code in new_openings:
 
-            msg = (
-                f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
-                f"🎉 Booking is LIVE!\n\n"
-                f"🏢 Theatre:\n"
-                f"{venue}\n\n"
-                f"🎬 Format:\n"
-                f"English 3D\n\n"
-                f"📅 Date:\n"
-                f"{pretty}\n\n"
-                f"🔗 Book Now\n"
-                f"{cfg['target_url']}"
-            )
-
-        else:
-
-            msg = (
-                f"🎬 Booking is OPEN!\n\n"
-                f"{cfg.get('movie', 'Movie')}\n"
-                f"Theatre: {cfg['theatre']}\n\n"
-                f"Book here: {cfg['target_url']}"
-            )
+        msg = (
+            f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
+            f"🎉 Booking is LIVE!\n\n"
+            f"🏢 Theatre:\n"
+            f"{theatre_names.get(code, code)}\n\n"
+            f"🎬 Format:\n"
+            f"English 3D\n\n"
+            f"📅 Date:\n"
+            f"{pretty}\n\n"
+            f"🔗 Book Now\n"
+            f"{cfg['target_url']}"
+        )
 
         send_telegram(
             cfg["telegram_bot_token"],
             cfg["telegram_chat_id"],
-            msg,
+            msg
         )
 
-        print(f"[{label}] notification sent")
+        print(f"Notification sent for {code}")
 
     # Persist current state so we don't re-alert every run.
-    if available != state.get("available"):
-        state["available"] = available
-        state["checked_at"] = int(time.time())
-        save_json(STATE_PATH, state)
+    state["opened_venues"] = sorted(list(opened_now))
+    state["checked_at"] = int(time.time())
+
+    save_json(STATE_PATH, state)
 
     return 0
 
