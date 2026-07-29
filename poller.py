@@ -192,25 +192,17 @@ def is_available_bms_date(page_text, cfg):
 
 def is_available_venue_date(page_text, cfg):
     """
-    Theatre-specific detector: is a given venue bookable on a given date?
-
-    BMS renders a per-venue booking link like
-        /cinemas/chennai/<slug>/buytickets/<venueCode>/<date>
-    only when that venue has live shows for that exact date. Because the date
-    is baked into the link, it can't be confused with the silent fallback
-    (a fallback page carries /<code>/<fallbackDate>, not /<code>/<ourDate>).
-
-    Set venue_code (one) or venue_codes (list). With a list, it's open when
-    ANY of them is bookable for the date.
+    Theatre-specific detector.
     """
     date = cfg["requested_date"]
     codes = cfg.get("venue_codes") or [cfg["venue_code"]]
-    for code in codes:
-    if f"/{code}/{date}" in page_text:
-        cfg["venue_code"] = code
-        return True
 
-return False
+    for code in codes:
+        if f"/{code}/{date}" in page_text:
+            cfg["venue_code"] = code
+            return True
+
+    return False
 
 
 def is_available(page_text, cfg):
@@ -275,43 +267,50 @@ def main():
     print(f"[{label}] available={available} (was {state.get('available')})")
 
     if available and not state.get("available"):
+
         if cfg.get("detector") in ("bms_date", "venue_date"):
-    rd = cfg["requested_date"]
-    pretty = f"{rd[6:8]} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} {rd[0:4]}"
 
-    theatre_names = {
-        "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
-        "PVSR": "🎭 PVR Sathyam Cinemas",
-        "PCAN": "🎭 PVR PXL, VR Chennai",
-        "MAYJ": "🎭 MAYAJAAL Multiplex"
-    }
+            rd = cfg["requested_date"]
+            pretty = f"{rd[6:8]} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(rd[4:6])-1]} {rd[0:4]}"
 
-    venue = cfg.get("venue_label")
+            theatre_names = {
+                "PVPZ": "🎭 PVR Palazzo, Vijaya Mall",
+                "PVSR": "🎭 PVR Sathyam Cinemas",
+                "PCAN": "🎭 PVR PXL, VR Chennai",
+                "MAYJ": "🎭 MAYAJAAL Multiplex",
+            }
 
-    if not venue:
-        code = cfg.get("venue_code")
-        venue = theatre_names.get(code, code)
+            code = cfg.get("venue_code")
+            venue = theatre_names.get(code, code)
 
-    msg = (
-        f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
-        f"🎉 Booking is LIVE!\n\n"
-        f"🏢 Theatre:\n"
-        f"{venue}\n\n"
-        f"🎬 Format:\n"
-        f"English 3D\n\n"
-        f"📅 Date:\n"
-        f"{pretty}\n\n"
-        f"🔗 Book Now\n"
-        f"{cfg['target_url']}"
-    )
+            msg = (
+                f"🕷 {cfg.get('movie', 'Spider-Man: Brand New Day')}\n\n"
+                f"🎉 Booking is LIVE!\n\n"
+                f"🏢 Theatre:\n"
+                f"{venue}\n\n"
+                f"🎬 Format:\n"
+                f"English 3D\n\n"
+                f"📅 Date:\n"
+                f"{pretty}\n\n"
+                f"🔗 Book Now\n"
+                f"{cfg['target_url']}"
+            )
+
         else:
+
             msg = (
                 f"🎬 Booking is OPEN!\n\n"
                 f"{cfg.get('movie', 'Movie')}\n"
                 f"Theatre: {cfg['theatre']}\n\n"
                 f"Book here: {cfg['target_url']}"
             )
-        send_telegram(cfg["telegram_bot_token"], cfg["telegram_chat_id"], msg)
+
+        send_telegram(
+            cfg["telegram_bot_token"],
+            cfg["telegram_chat_id"],
+            msg,
+        )
+
         print(f"[{label}] notification sent")
 
     # Persist current state so we don't re-alert every run.
